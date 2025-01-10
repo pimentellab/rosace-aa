@@ -38,7 +38,7 @@ devtools::install_github("pimentellab/rosace-aa")
 library("rosaceAA")
 ```
 
-We recommend starting with the [vignette](https://pimentellab.com/rosace-aa/vignettes/). 
+We recommend starting with the vignette (intro_rosaceAA.Rmd).
 
 ## Further help
 
