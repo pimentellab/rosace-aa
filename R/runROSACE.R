@@ -504,6 +504,10 @@ RunRosace.Rosace <- function(object, savedir, mc.cores = 4, debug = FALSE, insta
                              pos.col, ctrl.col, ctrl.name, stop.col, stop.name,
                              wt.col, mut.col, aa.code, pos.act = FALSE, ...) {
 
+  if (!dir.exists(savedir)) {
+    dir.create(savedir, recursive = TRUE)
+  }
+  
   # Extract Assay
   if (type == "Assay") {
     sub_object <- ExtractAssay(object, name)

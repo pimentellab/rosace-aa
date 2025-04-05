@@ -9,10 +9,12 @@ vignette: >
 ---
 
 ```{r setup, echo=FALSE, results="hide"}
-knitr::opts_chunk$set(tidy = FALSE, cache = FALSE, 
-                      dev = "png", dpi=300, fig.align="center", out.widt1h = "100%",
-                      fig.width=6, fig.height = 4,
-                      message = FALSE, error = FALSE, warning = TRUE)
+knitr::opts_chunk$set(
+  tidy = FALSE, cache = FALSE,
+  dev = "png", dpi = 300, fig.align = "center", out.widt1h = "100%",
+  fig.width = 6, fig.height = 4,
+  message = FALSE, error = FALSE, warning = TRUE
+)
 ```	
 
 ## Installation
@@ -25,16 +27,16 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
 }
 ```
 
-and install `rosace` by typing:
+and install `rosace` from GitHub by typing (requires an Internet connection):
 
 ```{r eval=FALSE}
 devtools::install_github("pimentellab/rosace-aa")
 ```
 
-If you have cloned the git repository locally, navigate to the `rosace-aa` folder and type:
+If you have cloned the git repository locally, navigate to the `rosace-aa` directory and type:
 
 ```{r eval=FALSE}
-devtools::install(".") 
+devtools::install(".")
 ```
 
 Next load `rosaceAA` with:
@@ -49,7 +51,7 @@ library("rosaceAA")
 
 To explain how to use `rosaceAA` we provide an example based on the OCT1 drug cytotoxicity screen (https://www.biorxiv.org/content/10.1101/2023.06.06.543963v1.full). 
 
-The screen has three replicates. The count matrix is stored in "data/oct1.rda".
+The screen has three replicates. The count matrix is stored in `data/oct1.rda`.
 
 ```{r}
 data("oct1")
@@ -59,22 +61,28 @@ type <- "growth"
 
 #### Create Rosace object
 
-First, load the count file into the Assay object. 
-Each replicate in the experiment will form an Assay object and will share the same "key" (1SM73).
+First, load the count file into the `Assay` object. 
+Each replicate in the experiment will form an `Assay` and will share the same "key" (1SM73).
 
 ```{r}
-assay1 <- CreateAssayObject(counts = as.matrix(oct1_rep1[2:ncol(oct1_rep1)]),
-                            var.names = oct1_rep1$hgvs,
-                            key = key, rep = 1, type = type)
-assay2 <- CreateAssayObject(counts = as.matrix(oct1_rep2[2:ncol(oct1_rep2)]),
-                            var.names = oct1_rep2$hgvs,
-                            key = key, rep = 2, type = type)
-assay3 <- CreateAssayObject(counts = as.matrix(oct1_rep3[2:ncol(oct1_rep3)]),
-                            var.names = oct1_rep3$hgvs,
-                            key = key, rep = 3, type = type)
+assay1 <- CreateAssayObject(
+  counts = as.matrix(oct1_rep1[2:ncol(oct1_rep1)]),
+  var.names = oct1_rep1$hgvs,
+  key = key, rep = 1, type = type
+)
+assay2 <- CreateAssayObject(
+  counts = as.matrix(oct1_rep2[2:ncol(oct1_rep2)]),
+  var.names = oct1_rep2$hgvs,
+  key = key, rep = 2, type = type
+)
+assay3 <- CreateAssayObject(
+  counts = as.matrix(oct1_rep3[2:ncol(oct1_rep3)]),
+  var.names = oct1_rep3$hgvs,
+  key = key, rep = 3, type = type
+)
 ```
 
-Next create Rosace object by adding three Assay objects together.
+Next create a `Rosace` object by concatenating three `Assay` objects.
 
 ```{r}
 rosace <- CreateRosaceObject(object = assay1)
@@ -85,29 +93,31 @@ GetAssayName(rosace)
 
 #### Preprocessing
 
-'CreateAssayObject' calls function 'FilterData' to filter the variants with more than 'na.rmax'% of NAs and less than 'min.count' total counts by default. But we might want to filter more variants later.
+`CreateAssayObject` calls function `FilterData` to filter the variants with more than `na.rmax` of NAs and less than `min.count` total counts by default. But we might want to filter more variants later.
 
 ```{r}
 rosace <- FilterData(rosace, key = key, na.rmax = 0.5, min.count = 20)
 ```
 
-Then we will impute the NA data either by K-Nearest Neighbor method or fill the NA with 0. 
+Then we will impute the NA data either by K-Nearest Neighbor method or fill with 0. 
 
 ```{r}
 rosace <- ImputeData(rosace, key = key, impute.method = "knn", na.rmax = 0.5)
 # rosace <- ImputeData(rosace, key = key, impute.method = "zero")
 ```
 
-With a complete count matrix in the Assay object, we will normalize the data by either a list of wild-type variants or by the total count at the time point. We recommend using the wild-type normalization because it will align the wild-type variant score to be 0 for hypothesis testing.
+With a complete count matrix in the `Assay` object, we will normalize the data by either a list of wild-type variants or by the total count at the time point. We recommend using the wild-type normalization because it will align the wild-type variant score to be 0 for hypothesis testing.
 
 ```{r}
-rosace <- NormalizeData(rosace, key = key,
-                        normalization.method = "wt", 
-                        wt.var.names = c("_wt"), wt.rm = TRUE)
-# rosace <- NormalizeData(rosace, key = key, normalization.method = "total")
+rosace <- NormalizeData(rosace,
+  key = key,
+  normalization.method = "wt",
+  wt.var.names = c("_wt"), wt.rm = TRUE
+)
+# rosace <- NormalizeData(rosace, key = key, normalization.method = "total")  # Total count normalization
 ```
 
-After the Assay objects are all normalized, we can integrate three replicates into an Assays object stored in the "combined.assay" slot of the Rosace object.
+After the `Assay` objects are all normalized, we can integrate the three replicates into an `AssaySet` object stored in the `combined.assay` slot of the `Rosace` object.
 
 ```{r}
 rosace <- IntegrateData(object = rosace, key = key)
@@ -116,24 +126,26 @@ GetAssaySetName(rosace)
 
 #### Process variants' meta data (provide your own function)
 
-Provide your own function for parsing "hgvs" into position, mutation, wildtype, and type of mutation.
+Provide your own function for parsing "hgvs" into position, mutation, wildtype, and type of mutation. An example (for parsing OCT1 variant names) is provided below:
 
 ```{r}
 library("dplyr")
 colnames(rosace@var.data)
 rosace@var.data <- rosace@var.data %>%
-  mutate(tmp = substr(variants, 4, nchar(variants) - 1),
-         position = as.numeric(gsub("[[:alpha:]]", "", tmp)),
-         wildtype = substr(tmp, 1, 1),
-         tmp = substr(tmp, 2, nchar(tmp)),
-         mutation = gsub("[[:digit:]]", "", tmp)) %>%
+  mutate(
+    tmp = substr(variants, 4, nchar(variants) - 1),
+    position = as.numeric(gsub("[[:alpha:]]", "", tmp)),
+    wildtype = substr(tmp, 1, 1),
+    tmp = substr(tmp, 2, nchar(tmp)),
+    mutation = gsub("[[:digit:]]", "", tmp)
+  ) %>%
   dplyr::select(-tmp)
 
 func_map <- function(wt, mut) {
   if (nchar(wt) == 0) {
     return("NA")
   }
-  
+
   if (wt == mut) {
     return("synonymous")
   } else if (mut == "del") {
@@ -152,22 +164,27 @@ head(rosace@var.data)
 
 #### Run Rosace
 
-There are a few options to run Rosace model:
-Model 1
-1) pos.col: provide position column
-2) ctrl.col, ctrl.name, stop.col, stop.name: provide control or/and stop column (only useful when position column is provided).
-Model 2
-3) wt.col, mut.col, aa.code: provide wildtype and mutation column (only useful when position column is provided) as well as the amino acid coding (single or triple).
-Model 3
-4) pos.act: whether to add position-specific activation term
+There are a few options to run the `RosaceAA` model. For details of the three models, refer to [bioRxiv link](https://www.biorxiv.org/content/10.1101/2025.01.09.632281v1).
+Model 1 (position score only)
+1. `pos.col`: provide position column
+2. `ctrl.col`, `ctrl.name`, `stop.col`, `stop.name`: provide control and/or stop column (only useful if position column is provided).
+Model 2 (position score + global substitution score)
+3. `wt.col`, `mut.col`, `aa.code`: provide wildtype and mutation column (only useful when position column is provided) as well as the amino acid coding (single or triple).
+Model 3 (position score + substitution score * position-specific activation)
+4. `pos.act`: whether to add position-specific activation term
 
-For the purpose of this vignette, we've reduced the number of variants to 100 with brute force before running Rosace, since running on the full dataset might take an hour.
+See below for example runs of the three models.
+
+For the purpose of this vignette, we have reduced the number of variants to 100 with brute force before running Rosace, since running on the full dataset might take an hour.
 
 ```{r message=FALSE}
-## reduce number of variants
+## Only process 100 variants for the vignette, comment out the slicing for all data
+
+## Process the first assay
 rosace@assays$`1SM73_1`@norm.counts <- rosace@assays$`1SM73_1`@norm.counts[1:100, ]
 rosace@assays$`1SM73_1`@norm.var.names <- rosace@assays$`1SM73_1`@norm.var.names[1:100]
 
+## Or process the entire assay set instead
 rosace@assay.sets$`1SM73`@raw.counts <- rosace@assay.sets$`1SM73`@raw.counts[1:100, ]
 rosace@assay.sets$`1SM73`@combined.counts <- rosace@assay.sets$`1SM73`@combined.counts[1:100, ]
 rosace@assay.sets$`1SM73`@var.names <- rosace@assay.sets$`1SM73`@var.names[1:100]
@@ -176,112 +193,128 @@ rosace@assay.sets$`1SM73`@var.names <- rosace@assay.sets$`1SM73`@var.names[1:100
 ```{r message=FALSE}
 ## Model 0 example
 # running on an Assay (one replicate)
-rosace <- RunRosace(object = rosace,
-                    name = "1SM73_1",
-                    type = "Assay",
-                    savedir = "../tests/results/assay_model0/",
-                    install = TRUE)
+rosace <- RunRosace(
+  object = rosace,
+  name = "1SM73_1",
+  type = "Assay",
+  savedir = "../tests/results/assay_model0/",
+  install = TRUE
+)
 # running on an AssaySet (all three replicates)
-rosace <- RunRosace(object = rosace,
-                    name = "1SM73",
-                    type = "AssaySet",
-                    savedir = "../tests/results/assayset_model0/",
-                    install = FALSE)
+rosace <- RunRosace(
+  object = rosace,
+  name = "1SM73",
+  type = "AssaySet",
+  savedir = "../tests/results/assayset_model0/",
+  install = FALSE
+)
 ```
 
 ```{r message=FALSE}
 ## Model 1 example
 # running on an Assay (one replicate)
-rosace <- RunRosace(object = rosace,
-                    name = "1SM73_1",
-                    type = "Assay",
-                    savedir = "../tests/results/assay_model1/",
-                    pos.col = "position", # must
-                    ctrl.col = "type", # optional
-                    ctrl.name = "synonymous", # optional
-                    stop.col = "type", # optional
-                    stop.name = "deletion", # optional
-                    install = FALSE)
+rosace <- RunRosace(
+  object = rosace,
+  name = "1SM73_1",
+  type = "Assay",
+  savedir = "../tests/results/assay_model1/",
+  pos.col = "position", # must
+  ctrl.col = "type", # optional
+  ctrl.name = "synonymous", # optional
+  stop.col = "type", # optional
+  stop.name = "deletion", # optional
+  install = FALSE
+)
 # running on an AssaySet (all three replicates)
-rosace <- RunRosace(object = rosace,
-                    name = "1SM73",
-                    type = "AssaySet",
-                    savedir = "../tests/results/assayset_model1/",
-                    pos.col = "position", # must
-                    ctrl.col = "type", # optional
-                    ctrl.name = "synonymous", # optional
-                    stop.col = "type", # optional
-                    stop.name = "deletion", # optional
-                    install = FALSE)
+rosace <- RunRosace(
+  object = rosace,
+  name = "1SM73",
+  type = "AssaySet",
+  savedir = "../tests/results/assayset_model1/",
+  pos.col = "position", # must
+  ctrl.col = "type", # optional
+  ctrl.name = "synonymous", # optional
+  stop.col = "type", # optional
+  stop.name = "deletion", # optional
+  install = FALSE
+)
 ```
 
 ```{r message=FALSE}
 ## MODEL 2 example
 # running on an Assay (one replicate)
-rosace <- RunRosace(object = rosace,
-                    name = "1SM73_1",
-                    type = "Assay",
-                    savedir = "../tests/results/assayset_model2/",
-                    pos.col = "position",
-                    ctrl.col = "type",
-                    ctrl.name = "synonymous",
-                    stop.col = "type",
-                    stop.name = "deletion",
-                    wt.col = "wildtype", # must
-                    mut.col = "mutation", # must
-                    aa.code = "single", # must
-                    pos.act = FALSE,
-                    install = FALSE)
+rosace <- RunRosace(
+  object = rosace,
+  name = "1SM73_1",
+  type = "Assay",
+  savedir = "../tests/results/assayset_model2/",
+  pos.col = "position",
+  ctrl.col = "type",
+  ctrl.name = "synonymous",
+  stop.col = "type",
+  stop.name = "deletion",
+  wt.col = "wildtype", # must
+  mut.col = "mutation", # must
+  aa.code = "single", # must
+  pos.act = FALSE,
+  install = FALSE
+)
 # running on an AssaySet (all three replicates)
-rosace <- RunRosace(object = rosace,
-                    name = "1SM73",
-                    type = "AssaySet",
-                    savedir = "../tests/results/assayset_model2/",
-                    pos.col = "position",
-                    ctrl.col = "type",
-                    ctrl.name = "synonymous",
-                    stop.col = "type",
-                    stop.name = "deletion",
-                    wt.col = "wildtype", # must
-                    mut.col = "mutation", # must
-                    aa.code = "single", # must
-                    pos.act = FALSE,
-                    install = FALSE)
+rosace <- RunRosace(
+  object = rosace,
+  name = "1SM73",
+  type = "AssaySet",
+  savedir = "../tests/results/assayset_model2/",
+  pos.col = "position",
+  ctrl.col = "type",
+  ctrl.name = "synonymous",
+  stop.col = "type",
+  stop.name = "deletion",
+  wt.col = "wildtype", # must
+  mut.col = "mutation", # must
+  aa.code = "single", # must
+  pos.act = FALSE,
+  install = FALSE
+)
 ```
 
 
 ```{r message=FALSE}
 ## MODEL 3 example
 # running on an Assay (one replicate)
-rosace <- RunRosace(object = rosace,
-                    name = "1SM73_1",
-                    type = "Assay",
-                    savedir = "../tests/results/assayset_model3/",
-                    pos.col = "position",
-                    ctrl.col = "type",
-                    ctrl.name = "synonymous",
-                    stop.col = "type",
-                    stop.name = "deletion",
-                    wt.col = "wildtype", 
-                    mut.col = "mutation",
-                    aa.code = "single", 
-                    pos.act = TRUE, # must
-                    install = FALSE)
+rosace <- RunRosace(
+  object = rosace,
+  name = "1SM73_1",
+  type = "Assay",
+  savedir = "../tests/results/assayset_model3/",
+  pos.col = "position",
+  ctrl.col = "type",
+  ctrl.name = "synonymous",
+  stop.col = "type",
+  stop.name = "deletion",
+  wt.col = "wildtype",
+  mut.col = "mutation",
+  aa.code = "single",
+  pos.act = TRUE, # must
+  install = FALSE
+)
 # running on an AssaySet (all three replicates)
-rosace <- RunRosace(object = rosace,
-                    name = "1SM73",
-                    type = "AssaySet",
-                    savedir = "../tests/results/assayset_model2/",
-                    pos.col = "position",
-                    ctrl.col = "type",
-                    ctrl.name = "synonymous",
-                    stop.col = "type",
-                    stop.name = "deletion",
-                    wt.col = "wildtype",
-                    mut.col = "mutation", 
-                    aa.code = "single", 
-                    pos.act = TRUE, # must
-                    install = FALSE)
+rosace <- RunRosace(
+  object = rosace,
+  name = "1SM73",
+  type = "AssaySet",
+  savedir = "../tests/results/assayset_model2/",
+  pos.col = "position",
+  ctrl.col = "type",
+  ctrl.name = "synonymous",
+  stop.col = "type",
+  stop.name = "deletion",
+  wt.col = "wildtype",
+  mut.col = "mutation",
+  aa.code = "single",
+  pos.act = TRUE, # must
+  install = FALSE
+)
 ```
 
 The Rosace results can be retrieved using the `OutputScore` function. First, check the name of your Rosace run:
@@ -310,7 +343,7 @@ head(scores.data.model3$df_variant)
 head(scores.data.model3$df_position)
 ```
 
-The functional score represents the slope of the linear regression applied to normalized counts across time points, which serves as a measure of cell growth. A positive score indicates the mutation has a a gain of function (GOF) effect, while a negative score indicates a loss of function (LOF) effect. Similar to Rosace, the RosaceAA model learns a distribution of scores and reports the mean for each variant. 
+The functional score represents the slope of the linear regression applied to normalized counts across time points, which serves as a measure of cell growth. A positive score indicates the mutation has a gain-of-function (GOF) effect, while a negative score indicates a loss-of-function (LOF) effect. Similar to `Rosace`, the `RosaceAA` model learns a distribution of scores and reports the mean for each variant. 
 
 The `lfsr`, or local false sign rate, offers a Bayesian perspective for estimating uncertainty in the sign of the score. For a negative mean score, `lfsr` estimates the probability it could truly be positive, and vice versa. 
 
